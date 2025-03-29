@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Controller</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+    <style>
+        body {
+            background-image: url("uploads/background\ pi.jpg");
+            background-repeat: no-repeat;
+        }
+
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            background-color: white;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #343a40;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+            transition: 0.3s;
+        }
+
+        .btn {
+            margin: 2px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+    </style>
+    <script>
+        let mymodule = angular.module("myModuleKuch", []);
+        let myController = mymodule.controller("myControllerKuch", function ($scope, $http) {
+            $scope.jsonAry = [];
+            $scope.doFetchAll = function () {
+                let url = "/all-records";
+                $http.get(url).then(fxSuccess, fxFail);
+
+                function fxSuccess(response) {
+                    //alert(JSON.stringify(response.data));
+                    $scope.jsonAry = response.data;
+
+                }
+                function fxFail(err) {
+                    alert(err.data);
+                }
+            }
+
+            //--------------------------------
+            $scope.doBlock = function (email) {
+                if (confirm("Are you sure you want to block this user?") == false) return;
+                let url = "/update-status?email=" + email + "&status=1";
+                $http.get(url).then(fxSuccess, fxFail);
+
+                function fxSuccess(response) {
+                    alert(response.data);
+                    $scope.doFetchAll(); // Refresh records
+                }
+                function fxFail(err) {
+                    alert(err.data);
+                }
+            };
+
+            $scope.doResume = function (email) {
+                if (confirm("Are you sure you want to resume this user?") == false) return;
+                let url = "/update-status?email=" + email + "&status=0";
+                $http.get(url).then(fxSuccess, fxFail);
+
+                function fxSuccess(response) {
+                    alert(response.data);
+                    $scope.doFetchAll(); // Refresh records
+                }
+                function fxFail(err) {
+                    alert(err.data);
+                }
+            };
+
+        })
+    </script>
+
+</head>
+
+<body ng-app="myModuleKuch" ng-controller="myControllerKuch" ng-init="doFetchAll();">
+    <div class="container">
+        <form method="post">
+            <div class="head col-md-12">
+                <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">
+                    <div class="container-fluid">
+                        <span class="navbar-brand mb-0 h1" style="padding-left: 570px;">USER CONTROLLER</span>
+                    </div>
+                </nav>
+            </div>
+
+            <center>
+                
+                <br>
+                <table class="table table-bordered table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Email ID</th>
+                            <th>UType</th>
+                            <th>Status</th>
+                            <th>Operations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="obj in jsonAry">
+                            <td>{{obj.email}}</td>
+                            <td>{{obj.dropdown}}</td>
+                            <td>
+                                <span class="badge"
+                                    ng-class="{'bg-success': obj.statuss == 0, 'bg-danger': obj.statuss == 1}">
+                                    {{obj.statuss == 0 ? 'Active' : 'Blocked'}}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="#" class="btn btn-danger" ng-click="doBlock(obj.email);">Block</a>
+                                <a href="#" class="btn btn-success" ng-click="doResume(obj.email);">Resume</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </center>
+
+
+
+
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
