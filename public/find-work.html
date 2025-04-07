@@ -1,183 +1,382 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" ng-app="volunteerApp">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Find Jobs Page</title>
-  
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <title>Volunteer Dashboard</title>
 
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2980b9;
+      --dark-color: #2c3e50;
+      --light-color: #ecf0f1;
+      --success-color: #27ae60;
+    }
+
     body {
-      background-color: darkgray;
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .container1 {
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: white;
+    }
+
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 1rem 2rem;
+    }
+
+    .dashboard-container {
       display: flex;
-      width: 100%;
-      height: 100vh;
-      margin: 20px auto;
+      width: 95%;
+      margin: 2rem auto;
       border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      min-height: 80vh;
     }
 
-    .column1 {
+    .sidebar {
       flex: 1;
-      background-color: #dcdcdc;
-      padding: 20px;
-      text-align: center;
-      border-radius: 20px;
+      background-color: white;
+      padding: 2rem;
+      border-right: 1px solid #e0e0e0;
     }
 
-    .column2 {
+    .main-content {
       flex: 4;
-      background-color: #778899;
-      padding: 20px;
-      border-radius: 20px;
+      background-color: white;
+      padding: 2rem;
+    }
+
+    .sidebar-title {
+      color: var(--dark-color);
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 1.3rem;
+      border-bottom: 2px solid var(--light-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .form-label {
+      font-weight: 500;
+      color: var(--dark-color);
+      margin-top: 1rem;
+    }
+
+    .form-select,
+    .form-control {
+      border-radius: 8px;
+      border: 1px solid #ced4da;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn-search {
+      background-color: var(--primary-color);
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-search:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     table {
       width: 100%;
       background-color: white;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      border: 1px solid black;
-      padding: 10px;
-      text-align: center;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
     }
 
     th {
-      background-color: #555;
+      background-color: var(--primary-color);
       color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 0.8rem;
+      text-align: center;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+
+    .table-responsive {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .form-check-input:checked {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .no-records {
+      text-align: center;
+      padding: 2rem;
+      color: #7f8c8d;
+      font-size: 1.1rem;
+    }
+
+    .back-btn {
+      position: absolute;
+      right: 20px;
+      top: 15px;
+      background-color: white;
+      color: var(--primary-color);
+      border: none;
+      border-radius: 5px;
+      padding: 5px 15px;
+      font-weight: 500;
+    }
+
+    .back-btn:hover {
+      background-color: #f8f9fa;
+    }
+
+    @media (max-width: 992px) {
+      .dashboard-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+      }
     }
   </style>
 </head>
 
-<script>
-  $scope.jsonAry=[];
-        $scope.dofetchcity=function()
-        {
-            let url="/all-records-city";
-            $http.get(url).then(fxSuccess,fxFail);
-
-            function fxSuccess(response)
-            {
-                alert(JSON.stringify(response.data));
-
-                $scope.jsonAry=response.data;
-                
-            }
-            function fxFail(err)
-            {
-                alert(err.data);
-            }
-        }
-        
-         ///----------
-         
-        $scope.jsonAryTitle=[];
-        $scope.dofetchtitle=function()
-        {
-            let url="/all-records-title";
-            $http.get(url).then(fxSuccess,fxFail);
-
-            function fxSuccess(response)
-            {
-                alert(JSON.stringify(response.data));
-                $scope.jsonAryTitle=response.data;
-                
-            }
-            function fxFail(err)
-            {
-                alert(err.data);
-            }
-        }
-</script>
-
-<body>
-  <div class="container">
-    <form method="post">
+<body ng-controller="volunteerController">
+  <div class="container-fluid px-0">
+    <form>
       <div class="head">
-        <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">
+        <nav class="navbar navbar-expand-lg bg-primary">
           <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1 text-center w-100">Find Jobs Near Me</span>
+            <span class="navbar-brand mb-0 h1 text-center w-100">Volunteer Job Portal</span>
+            <button class="back-btn" ng-click="goToDashboard()">
+              <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </button>
           </div>
         </nav>
       </div>
 
-      <div class="container1">
-        <div class="column1">
-          <!-- Sidebar Content -->
+      <div class="dashboard-container">
+        <div class="sidebar">
+          <div class="sidebar-title">Search Filters</div>
+
           <label for="city" class="form-label">Select City</label>
-          <select id="city" name="city" class="form-select mb-3">
-            <option value="all">All</option>
-            <option value="pune">Pune</option>
-            <option value="mumbai">Mumbai</option>
-            <option value="gurugram">Gurugram</option>
-            <option value="delhi">Delhi</option>
-            <option value="banglore">Banglore</option>
+          <select id="city" name="city" class="form-select" ng-model="filters.city"
+            ng-options="city as city for city in cities">
+            <option value="">All Cities</option>
           </select>
 
           <label for="job-title" class="form-label">Select Job Title</label>
-          <select id="job-title" name="job-title" class="form-select mb-3">
-            <option value="all">All</option>
-            <option value="maid">Maid</option>
-            <option value="care taker">Care Taker</option>
-            <option value="gardner">Gardner</option>
-            <option value="sweeper">Sweeper</option>
-            <option value="garbage collector">Garbage collector</option>
+          <select id="job-title" name="job-title" class="form-select" ng-model="filters.jobTitle"
+            ng-options="title as title for title in jobTitles">
+            <option value="">All Job Titles</option>
           </select>
 
-          <label class="form-label d-block">Education</label>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="education" id="edu-yes" value="yes">
-            <label class="form-check-label" for="edu-yes">Yes</label>
+          <label class="form-label">Education Required</label>
+          <div class="d-flex justify-content-between mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="education" id="edu-yes" value="yes"
+                ng-model="filters.education">
+              <label class="form-check-label" for="edu-yes">Yes</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="education" id="edu-no" value="no"
+                ng-model="filters.education">
+              <label class="form-check-label" for="edu-no">No</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="education" id="edu-any" value=""
+                ng-model="filters.education" checked>
+              <label class="form-check-label" for="edu-any">Any</label>
+            </div>
           </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="education" id="edu-no" value="no">
-            <label class="form-check-label" for="edu-no">No</label>
-          </div>
-          <br><br>
-          
-          <input type="submit" class="btn btn-primary col-md-8" value="Search" name="findbtn" ng-click="dofetchcity(obj.city), dofetchtitle(obj.job-title)">
+
+          <button type="button" class="btn btn-search" ng-click="searchJobs()">
+            <i class="fas fa-search me-2"></i>Search Jobs
+          </button>
         </div>
-        
-        <div class="column2">
-          <!-- Main Content -->
-          <table>
-            <tr>
-              <th>Sr. No</th>
-              <th>Email ID</th>
-              <th>Job Title</th>
-              <th>Job Type</th>
-              <th>Address</th>
-              <th>City</th>
-              <th>Education</th>
-              <th>Contact</th>
-            </tr>
-            <tr ng-repeat="obj in jsonAry">
-              <td>{{$index+1}}</td>
-              <td>{{obj.cid}}</td>
-              <td>{{obj.jobtitle}}</td>
-              <td>{{obj.jobtype}}</td>
-              <td>{{obj.address}}</td>
-              <td>{{obj.city}}</td>
-              <td>{{obj.edu}}</td>
-              <td>{{obj.contact}}</td>
-              <!-- <td align="center">
-                <a href="#" class="btn btn-danger" ng-click="doShowDetails(obj.email,$index);">Details</a>
-              </td> -->
-            </tr>
-          </table>
+
+        <div class="main-content">
+          <h4 class="mb-4" style="color: var(--dark-color);">Available Job Listings</h4>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Sr. No</th>
+                  <th>Email ID</th>
+                  <th>Job Title</th>
+                  <th>Job Type</th>
+                  <th>Address</th>
+                  <th>City</th>
+                  <th>Education</th>
+                  <th>Contact</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="job in filteredJobs | filter:customFilter">
+                  <td>{{$index + 1}}</td>
+                  <td>{{job.cid}}</td>
+                  <td>{{job.jobtitle}}</td>
+                  <td>{{job.jobtype}}</td>
+                  <td>{{job.address}}</td>
+                  <td>{{job.city}}</td>
+                  <td>{{job.edu}}</td>
+                  <td>{{job.contact}}</td>
+                  <td>
+                    <input type="submit" class="btn btn-danger btn-sm" value="Delete" ng-click="deleteJob(job)">
+                  </td>
+                </tr>
+                <tr ng-if="filteredJobs.length === 0">
+                  <td colspan="9" class="no-records">
+                    No job listings found. Try adjusting your search filters.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </form>
   </div>
+
+  <script>
+    angular.module('volunteerApp', [])
+      .controller('volunteerController', ['$scope', '$http', function ($scope, $http) {
+        // Initialize variables
+        $scope.jobs = [];
+        $scope.filteredJobs = [];
+        $scope.cities = [];
+        $scope.jobTitles = [];
+
+        $scope.filters = {
+          city: '',
+          jobTitle: '',
+          education: ''
+        };
+
+        // Fetch initial data
+        $scope.init = function () {
+          // Fetch all jobs
+          $http.get('/all-jobs').then(function (response) {
+            $scope.jobs = response.data;
+            $scope.filteredJobs = angular.copy($scope.jobs);
+          });
+
+          // Fetch cities
+          $http.get('/all-records-city').then(function (response) {
+            $scope.cities = response.data.map(item => item.city);
+          });
+
+          // Fetch job titles
+          $http.get('/all-records-title').then(function (response) {
+            $scope.jobTitles = response.data.map(item => item.jobtitle);
+          });
+        };
+
+        // Custom filter function
+        $scope.customFilter = function (job) {
+          // City filter
+          if ($scope.filters.city && job.city !== $scope.filters.city) {
+            return false;
+          }
+
+          // Job title filter
+          if ($scope.filters.jobTitle && job.jobtitle !== $scope.filters.jobTitle) {
+            return false;
+          }
+
+          // Education filter
+          if ($scope.filters.education && job.edu.toLowerCase() !== $scope.filters.education.toLowerCase()) {
+            return false;
+          }
+
+          return true;
+        };
+
+        // Search jobs function
+        $scope.searchJobs = function () {
+          $scope.filteredJobs = $scope.jobs.filter($scope.customFilter);
+        };
+
+        // Reset to show all jobs
+        $scope.resetFilters = function () {
+          $scope.filters = {
+            city: '',
+            jobTitle: '',
+            education: ''
+          };
+          $scope.filteredJobs = angular.copy($scope.jobs);
+        };
+
+        // Navigate back to dashboard
+        $scope.goToDashboard = function () {
+          window.location.href = '/vol-dash';
+        };
+
+        // Initialize the controller
+        $scope.init();
+
+        // Add inside the controller
+        $scope.deleteJob = function (job) {
+          if (confirm('Are you sure you want to delete this job?')) {
+            $http.delete('/delete-job', { params: { jobid: job.jobid } })
+              .then(function (response) {
+                if (response.data.success) {
+                  // Remove from main array
+                  const index = $scope.jobs.findIndex(j => j.jobid === job.jobid);
+                  if (index > -1) $scope.jobs.splice(index, 1);
+
+                  // Remove from filtered array
+                  const filteredIndex = $scope.filteredJobs.findIndex(j => j.jobid === job.jobid);
+                  if (filteredIndex > -1) $scope.filteredJobs.splice(filteredIndex, 1);
+                } else {
+                  alert('Job not found or already deleted');
+                }
+              })
+              .catch(function (error) {
+                console.error('Delete error:', error);
+                alert('Error deleting job');
+              });
+          }
+        };
+
+      }]);
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"

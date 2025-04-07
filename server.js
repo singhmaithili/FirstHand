@@ -7,9 +7,6 @@ var dotenv = require("dotenv")
 dotenv.config()
 const path = require('path');
 
-
-
-
 app.listen(2006, function () {
     console.log("Server started ")
 });
@@ -31,6 +28,15 @@ mysqlServer.connect(function (err) {
     }
 });
 
+app.use(express.urlencoded(true));
+app.use(fileUploader());
+
+cloudinary.config({
+    cloud_name: process.env.cloud_name,
+    api_key: process.env.api_key,
+    api_secret: process.env.api_secret
+});
+
 app.get("/", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/index.html";
@@ -43,17 +49,33 @@ app.get("/index", function (req, resp) {
 })
 
 app.get("/user-signup-page", function (req, resp) {
-    console.log(req.query.sgnEmail)
-    mysqlServer.query("INSERT INTO userInfo (email, pwd, dropdown) VALUES (?,?,?)", [req.query.sgnEmail, req.query.sgnPwd, req.query.dropdown1], function (err, res) {
-        if (!err) {
-            console.log("Data Saved");
-            resp.send("Account created successfully, Login now.")
+    const { sgnEmail, sgnPwd, dropdown1 } = req.query;
+
+    // Step 1: Check if the email already exists
+    mysqlServer.query("SELECT * FROM userInfo WHERE email = ?", [sgnEmail], function (err, results) {
+        if (err) {
+            console.log(err);
+            return resp.send({ status: "error", message: "Database error" });
         }
-        else {
-            console.log(err)
+
+        if (results.length > 0) {
+            // Email already exists
+            return resp.send({ status: "exists", message: "User already exists with this email." });
         }
-    })
-})
+
+        // Step 2: Insert new user
+        mysqlServer.query("INSERT INTO userInfo (email, pwd, dropdown) VALUES (?, ?, ?)",
+            [sgnEmail, sgnPwd, dropdown1], function (err, res2) {
+                if (err) {
+                    console.log(err);
+                    return resp.send({ status: "error", message: "Signup failed. Try again." });
+                }
+
+                console.log("Data Saved");
+                return resp.send({ status: "success", message: "Account created successfully. Login now." });
+            });
+    });
+});
 
 app.get("/user-login-page", function (req, resp) {
     let sgnEmail1 = req.query.sgnEmail1;
@@ -62,19 +84,18 @@ app.get("/user-login-page", function (req, resp) {
     mysqlServer.query("SELECT * from userInfo where email=? AND pwd=?", [sgnEmail1, sgnPwd1], function (err, resultArr) {
         if (err == null) {
 
-            if(resultArr.length==0)
-               // resp.status(401).send("Invalid credentials");
-                 resp.send("Invalid User Id or Password");
-            else if(resultArr[0].statuss == 0) {
-                    // resp.send("logged in successfully");
-                    resp.send(resultArr[0].dropdown);
-                }
-                else {
-                    resp.send("You are BLOCKED user !!");
-                }
+            if (resultArr.length == 0)
+                // resp.status(401).send("Invalid credentials");
+                resp.send("Invalid User Id or Password");
+            else if (resultArr[0].statuss == 0) {
+                // resp.send("logged in successfully");
+                resp.send(resultArr[0].dropdown);
+            }
+            else {
+                resp.send("You are BLOCKED user !!");
+            }
         }
-        else
-        {
+        else {
             resp.send(err.message)
         }
     })
@@ -92,6 +113,12 @@ app.get("/find-jobs", function (req, resp) {
     resp.sendFile(fullpath);
 })
 
+app.get("/change-password", function (req, resp) {
+    let dirName = __dirname;
+    let fullpath = dirName + "/public/change-password.html";
+    resp.sendFile(fullpath);
+})
+
 app.get("/client-page", function (req, resp) {
     //resp.send("New page !!!")
     let dirName = __dirname;
@@ -99,146 +126,179 @@ app.get("/client-page", function (req, resp) {
     resp.sendFile(fullpath);
 })
 
-app.get("/client-dash", function (req, resp){
+app.get("/client-dash", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/client-dash.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/vol-dash", function (req, resp){
+app.get("/vol-dash", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/vol-dash.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/job-post", function(req, resp){
+app.get("/job-post", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/post-job.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/manage-job", function(req, resp){
+app.get("/manage-job", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/job-manager.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/admin-dash", function(req, resp){
+app.get("/admin-dash", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/admin-dash.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/user-cntrl", function(req, resp){
+app.get("/user-cntrl", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/user-controller.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/vol-mngr", function(req, resp){
+app.get("/vol-mngr", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/volu-manager.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/client-mngr", function(req, resp){
+app.get("/client-mngr", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/client-manager.html";
     resp.sendFile(fullpath);
 })
 
-app.get("/admin-analytics", function(req, resp){
+app.get("/admin-analytics", function (req, resp) {
     let dirName = __dirname;
     let fullpath = dirName + "/public/analytics-dashboard.html";
     resp.sendFile(fullpath);
 })
 
+app.post("/register-vol", async function (req, resp) {
+    let ukEmail = req.body.ukEmail;
+    let ukName = req.body.ukName;
+    let ukCnt = req.body.ukCnt;
+    let ukAdd = req.body.ukAdd;
+    let ukCity = req.body.ukCity;
+    let ukGender = req.body.ukGender;
+    let ukDob = req.body.ukDob;
+    let ukQual = req.body.ukQual;
+    let ukOccu = req.body.ukOccu;
+    let ukOtherInfo = req.body.ukOtherInfo;
+    let fileNameProfPic;
+    let fileNameID;
 
-app.use(express.urlencoded(true));
-app.use(fileUploader());
-
-cloudinary.config({
-    cloud_name: process.env.cloud_name,
-    api_key: process.env.api_key,
-    api_secret: process.env.api_secret
-});
-
-app.post("/register-vol", async function (req, res) {
-    try {
-
-        let fileName1;
-        if (req.files != null) {
-            fileName1 = req.files.ukProfPic.name;
-            let locationToSave = __dirname + "/public/uploads/" + fileName1;
-
-            await req.files.ukProfPic.mv(locationToSave);
-
-            try {
-                let result = await cloudinary.uploader.upload(locationToSave);
-                fileName1 = result.url;
-                console.log("Uploaded file URL : ", fileName1);
-            } catch (uploadError) {
-                console.error("Cloudinary Upload Error : ", uploadError);
-                res.send("Error uploading file to Cloudinary.")
+    mysqlServer.query("select email from userInfo  where email=?", [ukEmail], async function (err, resMain) {
+        // console.log("resultMain "+JSON.stringify(resMain))
+        try {
+            // console.log(ukEmail)
+            if (!ukEmail) {
+                resp.send("Please enter valid email.")
             }
-        }
-        else {
-            fileName1 = "noPic.jpg";
-        }
-        // 2 second delay before next upload
-        await new Promise(resolve => setTimeout(resolve, 2000));
+            else {
+                if (resMain[0].email == ukEmail) {
+                    // console.log(err + "1")
+                    // resp.send("Email is verified!")
+                    if (!ukEmail || !ukName || !ukCnt || !ukAdd || !ukCity || !ukDob
+                        || ukOccu == "Select" || ukQual == "Select"
+                        || ukGender == "Select") {
+                        resp.send("Enter valid details!")
+                        // console.log(err + "2")
+                    }
+                    else {
+                        // console.log(err + "3")
+                        if (!req.files) {
+                            fileNameProfPic = "nopic.jpg";
+                            fileNameID = "nopic2.jpg";
+                            resp.send("files not uploaded")
+                            // console.log(fileNameID + " " + fileNamePpic)
+                            // console.log(err + "4")
+                        }
+                        else {
+                            // console.log(err + "5")
+                            {
+                                fileNameProfPic = req.files.ukProfPic.name;
+                                let locationToSaveProfPic = __dirname + "/public/uploads/" + fileNameProfPic;//full ile path
+                                await req.files.ukProfPic.mv(locationToSaveProfPic);//saving file in uploads folder
 
-        let fileName2;
-        if (req.files != null) {
-            fileName2 = req.files.ukAdharPic.name;
-            let locationToSave1 = __dirname + "/public/uploads/" + fileName2;
+                                //saving ur file/pic on cloudinary server
+                                await cloudinary.uploader.upload(locationToSaveProfPic).then(function (picUrlResultPpic) {
+                                    fileNameProfPic = picUrlResultPpic.url;   //will give u the url of ur pic on cloudinary server
+                                    // console.log(fileNameProfPic);
+                                });
+                                fileNameID = req.files.ukAdharPic.name;
+                                let locationToSaveID = __dirname + "/public/uploads/" + fileNameID;//full ile path
+                                await req.files.ukAdharPic.mv(locationToSaveID);//saving file in uploads folder
 
-            await req.files.ukProfPic.mv(locationToSave1);
+                                // 2 second delay for the next upload
+                                await new Promise(resolve => setTimeout(resolve, 2000));
 
-            try {
-                let result1 = await cloudinary.uploader.upload(locationToSave1);
-                fileName2 = result1.url;
-                console.log("Uploaded file URL : ", fileName2);
-            } catch (uploadError) {
-                console.error("Cloudinary Upload Error : ", uploadError);
-                res.send("Error uploading file to Cloudinary.")
-            }
-        }
-        else {
-            fileName2 = "noPic1.jpg";
-        }
-        // Insert data into MySQL
-        mysqlServer.query(
-            "INSERT INTO volkyc (emailid, vname, contact, address, city, gender, dob, quali, occu, info, picpath, idpath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                req.body.ukEmail,
-                req.body.ukName,
-                req.body.ukCnt,
-                req.body.ukAdd,
-                req.body.ukCity,
-                req.body.ukGndr,
-                req.body.ukDob,
-                req.body.ukQual,
-                req.body.ukOccu,
-                req.body.ukOtherInfo,
-                fileName1,
-                fileName2,
-            ],
-            function (err, result) {
-                if (err) {
-                    console.error("Database Error:", err);
-                    res.status(500).send("Error saving data");
-                    // mysqlServer.query("UPDATE volkyc set vname=?, contact=?,address=?,city=?,gender=?,dob=?,quali=?,occu=?,info=?,picpath=?,idpath=? where emailid=?")
-                    //,[]
-                } else {
-                    res.send("Volunteer data saved successfully!");
+                                //saving ur file/pic on cloudinary server
+                                await cloudinary.uploader.upload(locationToSaveID).then(function (picUrlResultIDproof) {
+                                    fileNameID = picUrlResultIDproof.url;   //will give u the url of ur pic on cloudinary server
+                                    // console.log(fileNameID);
+                                    // console.log(err + "6")
+                                });
+                                mysqlServer.query("select email,emailid from userInfo INNER JOIN volkyc ON userInfo.email=volkyc.emailid where volkyc.emailid=?",
+                                    [ukEmail], function (err, res) {
+                                        // console.log(err + "7")
+                                        // console.log(res)
+                                        if (res.length === 0) {
+                                            // console.log(err + "8")
+                                            mysqlServer.query("INSERT INTO volkyc(emailid, vname, contact, address, city, gender, dob, quali, occu, info, picpath, idpath) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", [
+                                                ukEmail,
+                                                ukName,
+                                                ukCnt,
+                                                ukAdd,
+                                                ukCity,
+                                                ukGender,
+                                                ukDob,
+                                                ukQual,
+                                                ukOccu,
+                                                ukOtherInfo,
+                                                fileNameProfPic,
+                                                fileNameID
+                                            ], function (err, res2) {
+                                                if (!err) {
+                                                    // console.log(err + "9")
+                                                    resp.send("KYC Completed successfully!")
+                                                }
+                                                // else { console.log(err + "10 main") }
+                                            })
+
+                                        }
+                                        else {
+
+                                            resp.send("Please enter the registered Email address and try again.")
+                                            // console.log(err + "11")
+                                        }
+                                    })
+
+                            }
+
+                        }
+
+
+                    }
+                }
+                else {
+                    resp.send("Please enter registered email!")
+                    // console.log(err + "12")
                 }
             }
-        );
-    } catch (error) {
-        console.error("Server Error:", error);
-        res.status(500).send("Internal Server Error");
-    }
+        }
+        catch {
+            resp.send("Main Cloud Error!")
+            console.error()
+        }
+
+    })
 });
 
 
@@ -246,103 +306,225 @@ app.post("/fetch-record", function (req, resp) {
     ukEmail = req.body.ukEmail;
     console.log("Received data:", req.body.ukEmail);  //Debugging
     // let email = req.body.ukEmail;  //Ensure correct data access
-
-    mysqlServer.query("Select * from volkyc where emailid = ?", [req.body.ukEmail], function (err, result) {
+    mysqlServer.query("select * from volkyc where emailid=?", [ukEmail], function (err, res) {
         if (err) {
-            console.error(err);
-            resp.send({ error: "Database error" });
-        } else if (result.length == 0) {
-            console.log(JSON.stringify(result))
-            console.log(result)
-            resp.send({ error: "No data found" });
-        } else {
-            resp.send(result); // Fix: Send JSON response
+            console.log(err + " error bck")
+            console.log("result " + res)
+            resp.send(err + " Error!")
+        }
+        else {
+            if (resp.affectedRows === 0) {
+                // console.log(err + " error bck else then if");
+                // console.log("result else then if" + res);
+                resp.send("Complete KYC First!");
+            } else {
+                resp.send(res);
+            }
         }
     })
 })
 
-app.post("/update-kyc", async function (req, res) {
-    try {
-
-        if(req.files==null){
-            file
-        }
-        let fileName1;
-        if (req.files != null) {
-            fileName1 = req.files.ukProfPic;
-            let locationToSave = __dirname + "/public/uploads/" + fileName1;
-
-            await req.files.ukProfPic.mv(locationToSave);
-
-            try {
-                let result = await cloudinary.uploader.upload(locationToSave);
-                fileName1 = result.url;
-                //console.log("Uploaded file URL : ", fileName1);
-            } catch (uploadError) {
-                console.error("Cloudinary Upload Error : ", uploadError);
-                res.send("Error uploading file to Cloudinary.")
-            }
-        }
-        else {
-            fileName1 = "noPic.jpg";
-        }
+app.post("/update-kyc", async function (req, resp) {
+    let ukEmail = req.body.ukEmail;
+    let ukName = req.body.ukName;
+    let ukCnt = req.body.ukCnt;
+    let ukAdd = req.body.ukAdd;
+    let ukCity = req.body.ukCity;
+    let ukGender = req.body.ukGender;
+    let ukDob = req.body.ukDob;
+    let ukQual = req.body.ukQual;
+    let ukOccu = req.body.ukOccu;
+    let ukOtherInfo = req.body.ukOtherInfo;
+    let ukProfPic = req.files ? req.files.ukProfPic : null;
+    let ukAdharPic = req.files ? req.files.ukAdharPic : null;
 
 
-        let fileName2;
-        if (req.files != null) {
-            fileName2 = req.files.ukAdharPic;
-            let locationToSave1 = __dirname + "/public/uploads/" + fileName2;
+    let fileNameProfPic;
+    let fileNameID;
 
-            await req.files.ukProfPic.mv(locationToSave1);
+    let NewukEmail;
+    let NewukName;
+    let NewukCnt;
+    let NewukAdd;
+    let NewukCity;
+    let NewukGender;
+    let NewukDob;
+    let NewukQual;
+    let NewukOccu;
+    let NewukOtherInfo;
+    let NewukProfPic;
+    let NewukAdharPic;
 
-            try {
-                let result1 = await cloudinary.uploader.upload(locationToSave1);
-                fileName2 = result1.url;
-                //console.log("Uploaded file URL : ", fileName2);
-            } catch (uploadError) {
-                console.error("Cloudinary Upload Error : ", uploadError);
-                res.send("Error uploading file to Cloudinary.")
-            }
+    mysqlServer.query("select * from volkyc where emailid=?", [ukEmail], function (err, res3) {
+        // console.log(res3)
+        if (res3.length == 0) {
+            resp.send("Fill the required data")
         }
         else {
-            fileName2 = "noPic1.jpg";
+            NewukEmail = res3[0].emailid;
+            NewukName = res3[0].fullname;
+            NewukCnt = res3[0].contact;
+            NewukAdd = res3[0].address;
+            NewukCity = res3[0].city;
+            NewukGender = res3[0].gender;
+            NewukDob = res3[0].dob;
+            NewukQual = res3[0].quali;
+            NewukOccu = res3[0].occu;
+            NewukOtherInfo = res3[0].info;
+            NewukProfPic = res3[0].picpath;
+            NewukAdharPic = res3[0].idpath;
+            // checking if any value is null
+            NewukEmail = (ukEmail != null && ukEmail !== '') ? ukEmail : NewukEmail;
+            NewukName = (ukName != null && ukName !== '') ? ukName : NewukName;
+            NewukCnt = (ukCnt != null && ukCnt !== '') ? ukCnt : NewukCnt;
+            NewukAdd = (ukAdd != null && ukAdd !== '') ? ukAdd : NewukAdd;
+            NewukCity = (ukCity != null && ukCity !== '') ? ukCity : NewukCity;
+            NewukGender = (ukGender != null && ukGender !== '') ? ukGender : NewukGender;
+            NewukDob = (ukDob != null && ukDob !== '') ? ukDob : NewukDob;
+            NewukQual = (ukQual != null && ukQual !== '') ? ukQual : NewukQual;
+            NewukOccu = (ukOccu != null && ukOccu !== '') ? ukOccu : NewukOccu;
+            NewukOtherInfo = (ukOtherInfo != null && ukOtherInfo !== '') ? ukOtherInfo : NewukOtherInfo;
+            NewukProfPic = (ukProfPic != null && ukProfPic !== '') ? ukProfPic : NewukProfPic;
+            NewukAdharPic = (ukAdharPic != null && ukAdharPic !== '') ? ukAdharPic : NewukAdharPic;
         }
-        // Insert data into MySQL
-        mysqlServer.query(
-            "UPDATE volkyc SET vname=?, contact=?, address=?, city=?, gender=?, dob=?, quali=?, occu=?, info=?, picpath=?, idpath=? WHERE emailid=?",
-            [
-                req.body.ukName,        
-                req.body.ukCnt,         
-                req.body.ukAdd,         
-                req.body.ukCity,        
-                req.body.ukGndr,        
-                req.body.ukDob,        
-                req.body.ukQual,       
-                req.body.ukOccu,        
-                req.body.ukOtherInfo,   
-                fileName1,              
-                fileName2,              
-                req.body.ukEmail        
-            ],
-            function (err, result) {
-                //console.log(res.body);
-                if (err == null) {
-                    if (result.affectedRows == 1) {
-                        res.send("Volunteer Record Updated Successfully !!")
+    })
+
+    mysqlServer.query("select email from userInfo where email=?", [ukEmail], async function (err, resMain) {
+        // console.log("resultMain "+JSON.stringify(resMain))
+        try {
+            // console.log(ukEmail)
+            if (!ukEmail) {
+                resp.send("Please enter valid email.")
+            }
+            else {
+                if (resMain[0].email == ukEmail) {
+                    // console.log(err+"1")
+                    // resp.send("Email is verified!")
+                    if (!ukEmail) {
+                        resp.send("Enter valid details!")
+                        // console.log(err+"2")
                     }
                     else {
-                        res.send("Invalid EmailID ")
+                        // console.log(err+"3")
+                        if (!req.files) {
+                            fileNameProfPic = "uploads/noPic.jpg";
+                            fileNameID = "uploads/noPic1.jpg";
+                            if (!req.files || !ukProfPic || !ukAdharPic) {
+                                return resp.status(400).send("Files not uploaded");
+                            }
+
+                            // console.log(err+"4")
+                        }
+                        else {
+                            // console.log(err + "5")
+                            {
+                                NewukProfPic = req.files.ukProfPic.name;
+                                let locationToSavePpic = __dirname + "/public/uploads/" + NewukProfPic;//full ile path
+                                await req.files.ukProfPic.mv(locationToSavePpic);//saving file in uploads folder
+
+                                //saving ur file/pic on cloudinary server
+                                await cloudinary.uploader.upload(locationToSavePpic).then(function (picUrlResultPpic) {
+                                    NewukProfPic = picUrlResultPpic.url;   //will give u the url of ur pic on cloudinary server
+                                    // console.log(NewukProfPic);
+                                });
+                                NewukAdharPic = req.files.ukAdharPic.name;
+                                let locationToSaveID = __dirname + "/public/uploads/" + NewukAdharPic;//full ile path
+                                await req.files.ukAdharPic.mv(locationToSaveID);//saving file in uploads folder
+
+                                // 2 second delay for the next upload
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                                //saving ur file/pic on cloudinary server
+                                await cloudinary.uploader.upload(locationToSaveID).then(function (picUrlResultIDproof) {
+                                    NewukAdharPic = picUrlResultIDproof.url;   //will give u the url of ur pic on cloudinary server
+                                    // console.log(NewukAdharPic);
+                                    // console.log(err + "6")
+                                });
+                                mysqlServer.query("select email,emailid from userInfo INNER JOIN volkyc ON userInfo.email=volkyc.emailid where volkyc.emailid=?",
+                                    [ukEmail], function (err, res) {
+                                        // console.log(err + "7")
+                                        // console.log(res)
+                                        if (res.length != 0) {
+                                            // console.log(err + "8")
+                                            mysqlServer.query("UPDATE volkyc set vname=?, contact=?, address=?, city=?, gender=?, dob=?, quali=?, occu=?, info=?, picpath=?, idpath=? WHERE emailid=?", [
+                                                NewukName,
+                                                NewukCnt,
+                                                NewukAdd,
+                                                NewukCity,
+                                                NewukGender,
+                                                NewukDob,
+                                                NewukQual,
+                                                NewukOccu,
+                                                NewukOtherInfo,
+                                                NewukProfPic,
+                                                NewukAdharPic,
+                                                ukEmail
+                                            ], function (err, res2) {
+                                                if (!err) {
+                                                    // console.log(err + "9")
+                                                    resp.send("KYC Updated successfully!")
+                                                }
+                                                // else { console.log(err + "10 main") }
+                                            })
+
+                                        }
+                                        else {
+
+                                            resp.send("Please enter the registered Email address and try again.")
+                                            // console.log(err + "11")
+                                        }
+                                    })
+
+                            }
+
+                        }
+
+
                     }
-                } else {
-                    res.send(err.message);
+                }
+                else {
+                    resp.send("Please enter registered email!")
+                    // console.log(err + "12")
                 }
             }
-        );
-    } catch (error) {
-        console.error("Server Error:", error);
-        res.status(500).send("Internal Server Error");
-    }
+        }
+        catch {
+            resp.send("Main Cloud Error!")
+            console.error()
+        }
+
+    })
 });
+
+// Change password API 
+app.post("/change-password", function (req, res) {
+    const { email, oldPassword, newPassword } = req.body;
+
+    mysqlServer.query("SELECT * FROM userInfo WHERE email = ?", [email], function (err, results) {
+        if (err) {
+            console.error(err);
+            return res.status(500).send("Database error");
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send("User not found");
+        }
+
+        if (results[0].pwd !== oldPassword) {
+            return res.status(401).send("Old password is incorrect");
+        }
+
+        mysqlServer.query("UPDATE userInfo SET pwd = ? WHERE email = ?", [newPassword, email], function (err) {
+            if (err) {
+                console.error(err);
+                return res.status(500).send("Error updating password");
+            }
+
+            return res.send("Password updated successfully");
+        });
+    });
+});
+
 
 app.post("/save-client", function (req, res) {
     try {
@@ -467,25 +649,25 @@ app.post("/change-client", function (req, res) {
 });
 
 app.post("/search-record", function (req, resp) {
-    cEmail = req.body.cEmail;
-    console.log("Received data:", req.body.cEmail);  
-    // let email = req.body.ukEmail;  
+    let email = req.body.cEmail;
+    console.log("Received data:", req.body.cEmail);
+      
 
     mysqlServer.query("Select * from cprofile where email = ?", [req.body.cEmail], function (err, result) {
         if (err) {
             console.error(err);
             resp.send({ error: "Database error" });
-        } else if (result.length == 0) {
+        } else if (result.affectedRows == 0) {
             console.log(JSON.stringify(result))
             console.log(result)
             resp.send({ error: "No data found" });
         } else {
-            resp.send(result); 
+            resp.send(result);
         }
     })
 })
 
-app.post("/publish-job", function(req, resp){
+app.post("/publish-job", function (req, resp) {
     let clientid = req.body.clientid;
     let cTitle = req.body.cTitle;
     let cJobType = req.body.cJobType;
@@ -501,8 +683,9 @@ app.post("/publish-job", function(req, resp){
         [clientid, cTitle, cJobType, fAdd, fCity, fEdu, fNum],
         function (err, result) {
             if (err) {
+                console.log(clientid+" email");
                 console.error(err);
-                resp.send( err+ "Database error" );
+                resp.send(err + "Database error");
             } else {
                 resp.send("Job published successfully!");
             }
@@ -510,10 +693,8 @@ app.post("/publish-job", function(req, resp){
     );
 })
 
-app.get("/all-records",function(req,resp)
-{
-    mysqlServer.query("select * from userInfo",function(err,result)
-    {
+app.get("/all-records", function (req, resp) {
+    mysqlServer.query("select * from userInfo", function (err, result) {
         // console.log(result);
         resp.send(result);
     })
@@ -540,40 +721,35 @@ app.get("/update-status", function (req, resp) {
     );
 });
 
-app.get("/vol-records",function(req,resp)
-{
-    mysqlServer.query("select * from volkyc",function(err,result)
-    {
+app.get("/vol-records", function (req, resp) {
+    mysqlServer.query("select * from volkyc", function (err, result) {
         //console.log(result);
         resp.send(result);
     })
 })
 
-app.get("/client-records",function(req,resp)
-{
-    mysqlServer.query("select * from cprofile",function(err,result)
-    {
+app.get("/client-records", function (req, resp) {
+    mysqlServer.query("select * from cprofile", function (err, result) {
         //console.log(result);
         resp.send(result);
     })
 })
 
-app.get("/get-records",function(req,resp)
-{
+app.get("/get-records", function (req, resp) {
     // let Emailid = req.query.EmailID; // Fetch cid from query parameters
 
     if (!req.query.EmailID) {
-        console.log(req.query.EmailID+" 1")
+        console.log(req.query.EmailID + " 1")
         resp.send("Missing Email ID parameter"); // Handle missing cid
     }
-    else{
-    mysqlServer.query("select * from JOBS where cid=?",[req.query.EmailID],function(err,result)
-    {
-        if (err) {
-            return resp.send(err);
-        }
-        resp.send(result);
-    })}
+    else {
+        mysqlServer.query("select * from JOBS where cid=?", [req.query.EmailID], function (err, result) {
+            if (err) {
+                return resp.send(err);
+            }
+            resp.send(result);
+        })
+    }
 })
 
 //------------access all cities of client post
@@ -586,11 +762,30 @@ app.get("/all-records-city", function (req, resp) {
 app.get("/all-records-title", function (req, resp) {
     mysqlServer.query("select distinct jobtitle from JOBS ", function (err, result) {
         resp.send(result);
-    })
+    })
 })
 
+// Get all jobs (new endpoint needed)
+app.get("/all-jobs", function (req, resp) {
+    mysqlServer.query("SELECT * FROM JOBS", function (err, result) {
+        resp.send(result);
+    })
+})
+
+// Delete a job by ID
+app.delete("/delete-job", function (req, resp) {
+    const jobId = req.query.jobid;
+    mysqlServer.query("DELETE FROM JOBS WHERE jobid = ?", [jobId], function (err, result) {
+        if (err) {
+            resp.status(500).send(err);
+        } else {
+            resp.send({ success: result.affectedRows > 0 });
+        }
+    });
+});
+
 // Add this endpoint to your server.js
-app.get("/admin/all-user-data", function(req, resp) {
+app.get("/admin/all-user-data", function (req, resp) {
     // Query to get all user data with their respective profile details
     const query = `
         SELECT 
@@ -660,7 +855,7 @@ app.get("/admin/all-user-data", function(req, resp) {
         ORDER BY isAdmin DESC, u.dropdown, name
     `;
 
-    mysqlServer.query(query, function(err, results) {
+    mysqlServer.query(query, function (err, results) {
         if (err) {
             console.error("Error fetching all user data:", err);
             resp.status(500).json({ error: err.message });
@@ -670,4 +865,15 @@ app.get("/admin/all-user-data", function(req, resp) {
     });
 });
 
-
+// Count jobs posted by Client
+app.post("/client/emailstatus",function(req,resp){
+    clientid = req.body.clientid;
+    mysqlServer.query("SELECT COUNT(*) AS total FROM JOBS WHERE cid = ?",[clientid],function(err,res){
+        if(err){
+            resp.send("Error! "+err)
+        }
+        else{
+            resp.send("Total jobs posted: "+res[0].total)
+        }
+    })
+})

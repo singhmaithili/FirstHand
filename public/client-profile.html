@@ -4,128 +4,247 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Client Profile Side</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-        crossorigin="anonymous"></script>
+    <title>Client Profile</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        body {
-            background-color: darkgray;
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #f8f9fc;
+            --accent-color: #2e59d9;
+            --text-color: #5a5c69;
+            --border-color: #e3e6f0;
         }
 
-        .container1 {
-            border: 0px black solid;
-            width: 80%;
-            /* Adjust width to leave space */
-            margin: 20px auto;
-            /* Auto centers the container */
-            border-radius: 50%;
-            box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+        body {
+            background-color: var(--secondary-color);
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-color);
+        }
+
+        .profile-header {
+            background-color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .profile-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .profile-card {
+            background-color: white;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 0.35rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-search {
+            background-color: #1cc88a;
+            border: none;
+        }
+
+        .btn-search:hover {
+            background-color: #17a673;
+        }
+
+        .btn-change {
+            background-color: #f6c23e;
+            border: none;
+        }
+
+        .btn-change:hover {
+            background-color: #dda20a;
+        }
+
+        .btn-dashboard {
+            background-color: #36b9cc;
+            border: none;
+        }
+
+        .btn-dashboard:hover {
+            background-color: #2c9faf;
+        }
+
+        .action-buttons {
             display: flex;
-            height: 100vh;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
     </style>
 
-<script>
+    <script>
+        $(document).ready(function () {
+            CurrentUser = localStorage.getItem('activeUser')
+            $("#cEmail").val(CurrentUser)
 
-    $(document).ready(function(){
-      $("#searchbtn").click(function(){
-        let obj={
-          type:"POST",
-          url:"/search-record",
-          data:{
-          cEmail:$("#cEmail").val()
-        }
-      }
 
-        //sending AJAX Call
-      $.ajax(obj).then(function(responseInJsonAry){
-        if(responseInJsonAry.length==0)
-          alert("Invalid Email Id ");
-        else{
-          let data = responseInJsonAry[0];
-          
-            $("#cName").val(data.name);
-            $("#cFirm").val(data.business);
-            $("#busProf").val(data.bprofile);
-            $("#cAdd").val(data.address);
-            $("#cCity").val(data.city);
-            $("#cCnt").val(data.contact);
-            $("#cProof").val(data.idproof);
-            $("#cNum").val(data.idnumber);
-            $("#cOtherInfo").val(data.info);;
-         }
-      }).fail(function(err){
-        alert("Error : "+err.responseText)
-      })
-    })
-  })
-  </script>
+            $("#searchbtn").click(function () {
+                let obj = {
+                    type: "POST",
+                    url: "/search-record",
+                    data: {
+                        cEmail: $("#cEmail").val()
+                    }
+                }
 
+                //sending AJAX Call
+                $.ajax(obj).then(function (responseInJsonAry) {
+                    if (responseInJsonAry.length == 0)
+                        alert("Invalid Email Id");
+                    else {
+                        let data = responseInJsonAry[0];
+
+                        $("#cName").val(data.name);
+                        $("#cFirm").val(data.business);
+                        $("#busProf").val(data.bprofile);
+                        $("#cAdd").val(data.address);
+                        $("#cCity").val(data.city);
+                        $("#cCnt").val(data.contact);
+                        $("#cProof").val(data.idproof);
+                        $("#cNum").val(data.idnumber);
+                        $("#cOtherInfo").val(data.info);;
+                    }
+                }).fail(function (err) {
+                    alert("Error : " + err.responseText)
+                })
+            });
+
+            // Function to redirect to dashboard
+            function goToDashboard() {
+                window.location.href = "/client-dash";
+            }
+        });
+    </script>
 </head>
 
 <body>
+    <div class="profile-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="profile-title">
+                    <i class="fas fa-user-tie me-2"></i>Client Profile
+                </h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary btn-dashboard text-white" onclick="goToDashboard()">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </button>
+                    <span class="badge bg-primary">Client Portal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <form method="post" enctype="multipart/form-data" action="/save-client">
-            <div class="head col-md-12">
-                <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">
-                    <div class="container-fluid">
-                        <span class="navbar-brand mb-0 h1" style="padding-left: 550px;">Client Side page </span>
+            <div class="profile-card">
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label">Client ID (Email)</label>
+                        <input type="email" class="form-control" id="cEmail" name="cEmail" disabled
+                            placeholder="Enter client email">
                     </div>
-                </nav>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <input type="button" class="btn btn-primary btn-search text-white w-100" name="searchbtn"
+                            id="searchbtn" value="Search Client">
+                    </div>
+                </div>
             </div>
 
-
-            <div class="column">
-                <div class="row mb-3" style="padding-top: 20px;">
+            <div class="profile-card">
+                <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">Client ID</label>
-                        <input type="email" class="form-control" id="cEmail" name="cEmail">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="cName" name="cName" placeholder="Enter full name">
                     </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <input type="button" class="btn btn-primary" name="searchbtn" id="searchbtn" value="Search">
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="cName" name="cName">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Firm / Business</label>
-                        <input type="text" class="form-control" id="cFirm" name="cFirm">
+                    <div class="col-md-6">
+                        <label class="form-label">Firm / Business Name</label>
+                        <input type="text" class="form-control" id="cFirm" name="cFirm"
+                            placeholder="Enter business name">
                     </div>
                 </div>
 
-                <div class="mb-3 col-md-12">
+                <div class="mb-3">
                     <label class="form-label">Business Profile</label>
-                    <textarea class="form-control" id="busProf" name="busProf"></textarea>
+                    <textarea class="form-control" id="busProf" name="busProf"
+                        placeholder="Describe your business"></textarea>
                 </div>
+            </div>
 
+            <div class="profile-card">
                 <div class="row mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-8">
                         <label class="form-label">Address</label>
-                        <input type="text" class="form-control" id="cAdd" name="cAdd">
+                        <input type="text" class="form-control" id="cAdd" name="cAdd" placeholder="Enter full address">
                     </div>
-
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label">City</label>
-                        <input type="text" class="form-control" id="cCity" name="cCity">
+                        <input type="text" class="form-control" id="cCity" name="cCity" placeholder="Enter city">
                     </div>
                 </div>
 
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label class="form-label">Contact No.</label>
-                        <input type="text" class="form-control" id="cCnt" name="cCnt">
+                        <label class="form-label">Contact Number</label>
+                        <input type="text" class="form-control" id="cCnt" name="cCnt" placeholder="Enter phone number">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">ID Proof</label>
+                    <div class="col-md-4">
+                        <label class="form-label">ID Proof Type</label>
                         <select class="form-select" id="cProof" name="cProof">
-                            <option value="Select" >Select</option>
+                            <option value="Select">Select ID Proof</option>
                             <option value="Aadharcard">Aadhar Card</option>
                             <option value="DrivingL">Driving License</option>
                             <option value="PANCard">PAN Card</option>
@@ -133,34 +252,39 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">ID Proof Number</label>
-                        <input type="text" class="form-control" id="cNum" name="cNum">
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label class="form-label">Other Information</label>
-                        <input type="text" class="form-control" id="cOtherInfo" name="cOtherInfo">
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <input type="submit" class="btn btn-primary" value="Save" name="cSave" id="cSave">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="submit" class="btn btn-primary" value="Change" name="cChange" id="cChange">
+                        <input type="text" class="form-control" id="cNum" name="cNum" placeholder="Enter ID number">
                     </div>
                 </div>
             </div>
 
+            <div class="profile-card">
+                <div class="mb-3">
+                    <label class="form-label">Additional Information</label>
+                    <input type="text" class="form-control" id="cOtherInfo" name="cOtherInfo"
+                        placeholder="Any other relevant information">
+                </div>
+            </div>
 
+            <div class="profile-card">
+                <div class="action-buttons">
+                    <input type="submit" class="btn btn-primary" value="Save Profile" name="cSave" id="cSave">
+                    <input type="submit" class="btn btn-primary btn-change text-white" value="Update Profile"
+                        name="cChange" id="cChange">
+                </div>
+            </div>
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+
+    <script>
+        // Dashboard redirection function
+        function goToDashboard() {
+            window.location.href = "/client-dash";
+        }
+    </script>
 </body>
 
 </html>

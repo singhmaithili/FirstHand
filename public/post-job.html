@@ -5,90 +5,260 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Publish Jobs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #f8f9fc;
+            --accent-color: #2e59d9;
+            --text-color: #5a5c69;
+            --border-color: #e3e6f0;
+        }
+        
         body {
-            background-image: url("uploads/background\ P.jpg");
-            background-repeat: no-repeat;
+            background-color: var(--secondary-color);
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-color);
+        }
+        
+        .job-header {
+            background-color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .job-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .job-card {
+            background-color: white;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select, .form-check-input {
+            border: 1px solid var(--border-color);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 0.35rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+        
+        .btn-dashboard {
+            background-color: #36b9cc;
+            border: none;
+        }
+        
+        .btn-dashboard:hover {
+            background-color: #2c9faf;
+        }
+        
+        .btn-publish {
+            background-color: #1cc88a;
+        }
+        
+        .btn-publish:hover {
+            background-color: #17a673;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
     </style>
-
-
 </head>
 
+<script>
+    $(document).ready(function () {
+      CurrentUser = localStorage.getItem('activeUser')
+      $("#clientid").val(CurrentUser)
+
+      $(function(response){
+        let obj={
+            method:"post",
+            url:"/client/emailstatus",
+            data:{
+                clientid:$("#clientid").val(),
+            }
+        }
+        $.ajax(obj).then(function(response){
+            $("#Fstatus").html(response)
+        }).fail(function(err){
+            $("#Fstatus").html(JSON.stringify(err))
+        })
+      })
+
+      $("#fPublish").click(function(response){
+        let selectedJobType = $("input[name='cJobType']:checked").val();
+        let obj={
+            method:"post",
+            url:"/publish-job",
+            data:{
+                clientid:$("#clientid").val(),
+                cTitle:$("#cTitle").val(),
+                cJobType:selectedJobType,
+                fAdd:$("#fAdd").val(),
+                fCity:$("#fCity").val(),
+                fEdu:$("#fEdu").val(),
+                fNum:$("#fNum").val()
+            }
+        }
+        $.ajax(obj).then(function(resp){
+            $("#Fstatus").html(resp)
+            $("input[name='cJobType']").prop("checked", false);
+            $("#cTitle").val(""),
+            $("#fAdd").val(""),
+            $("#fCity").val(""),
+            $("#fEdu").val(""),
+            $("#fNum").val("")
+
+        }).fail(function(err){
+            $("#Fstatus").html("Error! "+err)
+        })
+      })       
+    })
+</script>
+
 <body>
+    <div class="job-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="job-title">
+                    <i class="fas fa-briefcase me-2"></i>Publish Job
+                </h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary btn-dashboard text-white" onclick="window.location.href='/client-dash'">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </button>
+                    <span class="badge bg-primary">Client Portal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <form method="post" enctype="multipart/form-data" action="/publish-job">
-            <div class="head col-md-12">
-                <nav class="navbar bg-dark border-bottom border-body" data-bs-theme="dark">
-                    <div class="container-fluid">
-                        <span class="navbar-brand mb-0 h1" style="padding-left: 570px;">PUBLISH JOBS</span>
+        <form method="post" enctype="multipart/form-data">
+            <div class="job-card">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Client ID (Email)</label>
+                        <input type="email" class="form-control" id="clientid" name="clientid" placeholder="Enter your client email" disabled>
+                        <p id="Fstatus">`</p>
                     </div>
-                </nav>
+                </div>
             </div>
 
-            <div class="column">
-                <div class="row mb-3" style="padding-top: 20px;">
-                    <div class="col-md-6">
-                        <label class="form-label">Client ID</label>
-                        <input type="email" class="form-control" id="clientid" name="clientid" required>
-                    </div>
-                </div>
-
+            <div class="job-card">
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Job Title</label>
-                        <input type="text" class="form-control" id="cTitle" name="cTitle" required>
+                        <input type="text" class="form-control" id="cTitle" name="cTitle" placeholder="Enter job title" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Job Type</label>
+                        <div class="radio-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="cJobType" id="partTime" value="Part Time" checked>
+                                <label class="form-check-label" for="partTime">Part Time</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="cJobType" id="fullTime" value="Full Time">
+                                <label class="form-check-label" for="fullTime">Full Time</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="job-card">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Firm Address</label>
+                        <textarea class="form-control" id="fAdd" name="fAdd" placeholder="Enter complete firm address" required></textarea>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label" >Job Type</label>
-                        <div class="form-check" >
-                            <input class="form-check-input" type="radio" name="cJobType" id="partTime" value="Part Time">
-                            <label class="form-check-label" for="partTime">Part Time</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="cJobType" id="fullTime" value="Full Time">
-                            <label class="form-check-label" for="fullTime">Full Time</label>
-                        </div>
-                    </div>
-
-
-                </div>
-
-                <div class="row mb-3 ">
-                    <div class="col-md-6">
-                        <label class="form-label">Firm Address</label>
-                        <textarea class="form-control" id="fAdd" name="fAdd" required></textarea>
-                    </div>
-                    <div class="col-md-3">
                         <label class="form-label">City</label>
-                        <input type="text" class="form-control" id="fCity" name="fCity" required>
+                        <input type="text" class="form-control" id="fCity" name="fCity" placeholder="Enter city" required>
                     </div>
-
                 </div>
+            </div>
 
+            <div class="job-card">
                 <div class="row mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label">Education Required</label>
                         <select class="form-select" id="fEdu" name="fEdu">
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Contact Person : Name & Number</label>
-                        <input type="text" class="form-control" id="fNum" name="fNum" required>
+                    <div class="col-md-8">
+                        <label class="form-label">Contact Person: Name & Number</label>
+                        <input type="text" class="form-control" id="fNum" name="fNum" placeholder="Enter contact person details" required>
                     </div>
-                </div>
-                <br>
-                <div class="d-grid gap-2 col-6 mx-auto">
-                    <input type="submit" class="btn btn-primary" value="Publish Job" id="fPublish" name="fPublish">
                 </div>
             </div>
 
+            <div class="job-card text-center">
+                <input type="button" class="btn btn-primary btn-publish text-white px-5" id="fPublish" name="fPublish" value="Publish Job">
+            </div>
         </form>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
